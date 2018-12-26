@@ -107,6 +107,16 @@ mk_para(Line l)
 }
 
 static Block
+mk_ulist(Line l)
+{
+	Block b = emalloc(sizeof(struct Block));
+	b->t = ULIST;
+	b->v.l  = l;
+	b->next = NULL;
+	return b;
+}
+
+static Block
 mk_bcode(char *s)
 {
 	Block b = emalloc(sizeof(struct Block));
@@ -189,29 +199,36 @@ markman_parse(char *src)
 		return markman_parse(++src);
 	case '\0':
 		return NULL;
-	/* case '\t': */
-	/* 	s = ++src; */
-	/* 	for (; *src; src++) */
-	/* 		if (*src == '\n' && src[1] == '\t') */
-	/* 			src[1] */
-	/* 	ret = mk_bcode(s); */
-	/* 	ret->next = markman_parse(src); */
-	/* 	return ret; */
 	case '`':
 		if (src[1] == '`' && src[2] == '`')
 			src += strcspn(src, "\n");
 		for (s = src; *src; src++)
 			if (!strncmp(src, "\n```\n", 5)) {
-				/* printf("'%s'\n", src); */
 				src[1] = '\0';
 				src += 5;
-				/* src += strcspn(src, "\n"); */
 				break;
 			}
-		/* printf("'%s'\n", src); */
 		ret = mk_bcode(s);
 		ret->next = markman_parse(src);
 		return ret;
+	case '*':
+		if (src[1] == ' ') {
+			/* TODO fix multiline points */
+			for (s = src; *src; src++)
+				/* TODO support spaces before list */
+				if (!strncmp(src, "\n* ", 3)) {
+					src[0] = '\0';
+					src += 1;
+					break;
+				} else if (!strncmp(src, "\n\n", 2)) {
+					src[0] = '\0';
+					src += 2;
+					break;
+				}
+			ret = mk_ulist(line_parse(s+2, STR));
+			ret->next = markman_parse(src);
+			return ret;
+		}
 	default:
 		src += strspn(src, WS);
 		s = ecalloc(strlen(src), sizeof(char));
@@ -285,8 +302,11 @@ disp_block(Block b, Block prev)
 	case BCODE:
 		printf(".RS 4\n.EX\n%s\n.EE\n.RE\n", b->v.s);
 		break;
-	case QUOTE:
 	case ULIST:
+		printf(".IP ∙ 2\n");
+		disp_line(b->v.l);
+		puts("\n.PP");
+	case QUOTE:
 	case OLIST:
 		break;
 	}

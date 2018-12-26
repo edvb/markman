@@ -41,10 +41,6 @@ install: all
 	@mkdir -p $(DESTDIR)$(PREFIX)/bin
 	@cp -f $(EXE) $(DESTDIR)$(PREFIX)/bin
 	@chmod 755 $(DESTDIR)$(PREFIX)/bin/$(EXE)
-	@echo installing manual page to $(DESTDIR)$(MANPREFIX)/man1
-	@mkdir -p $(DESTDIR)$(MANPREFIX)/man1
-	@sed "s/VERSION/$(VERSION)/g" < $(EXE).1 > $(DESTDIR)$(MANPREFIX)/man1/$(EXE).1
-	@chmod 644 $(DESTDIR)$(MANPREFIX)/man1/$(EXE).1
 
 uninstall:
 	@echo removing $(EXE) from $(DESTDIR)$(PREFIX)/bin
