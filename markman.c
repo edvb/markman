@@ -186,13 +186,12 @@ markman_parse(char *src)
 	case '#':
 		for (; *src && *(++src) == '#'; lvl++);
 		src += strspn(src, WS);
-		s = ecalloc(strcspn(src, "\n") + 1, sizeof(char));
-		for (i = 0; *src && *src != '\n'; src++, i++)
-			s[i] = *src;
+		s = src;
+		src += strcspn(src, "\n");
+		*src = '\0';
 		ret = mk_header(lvl, line_parse((s[0] != '-') ? str_cap(s) : s, STR));
 		if (lvl >= 4)
 			ret->v.h.l->t = BOLD;
-		free(s);
 		ret->next = markman_parse(++src);
 		return ret;
 	case '\n':
@@ -236,10 +235,11 @@ markman_parse(char *src)
 			if (*src == '\n' && src[1] == '\n') {
 				s[i+1] = '\0';
 				break;
-			} else if (*src == '\n')
+			} else if (*src == '\n') {
 				s[i] = ' ';
-			else
+			} else {
 				s[i] = *src;
+			}
 		src += strspn(src, WS);
 		ret = mk_para(line_parse(s, STR));
 		ret->next = markman_parse(src);
