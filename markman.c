@@ -1,12 +1,12 @@
 /* See LICENSE file for copyright and license details. */
+#include <ctype.h>
+#include <fcntl.h>
 #include <libgen.h>
-#include <time.h>
-#include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <ctype.h>
 #include <string.h>
-#include <errno.h>
+#include <time.h>
+#include <unistd.h>
 
 #include "arg.h"
 #include "util.h"
@@ -346,6 +346,24 @@ markman_disp(Block b, char *name)
 	disp_block(b, NULL);
 }
 
+static char *
+str_file(int fd)
+{
+	char buf[BUFSIZ], *file = NULL;
+	int len, n;
+	while ((n = read(fd, buf, sizeof(buf))) > 0) {
+		file = erealloc(file, len + n + 1);
+		memcpy(file + len, buf, n);
+		len += n;
+		file[len] = '\0';
+	}
+	if (fd != 0)
+		close(fd);
+	if (n < 0)
+		die(1, "read:");
+	return file;
+}
+
 static void
 usage(const int eval)
 {
@@ -396,18 +414,19 @@ main(int argc, char *argv[])
 		usage(1);
 	} ARGEND;
 
-	char buf[BUFSIZ];
-	FILE *fp;
+	char *file;
+	int fd;
 	if (*argv) {
-		if (!(fp = fopen(*argv, "r")))
-			die(1, "%s: %s:", argv[0], *argv);
-		while ((fread(buf, 1, sizeof(buf), fp)) > 0) ;
+		if ((fd = open(*argv, O_RDONLY)) < 0)
+			die(1, "%s: %s:", argv0, *argv);
+		file = str_file(fd);
 		if (!title) title = *argv;
-		markman_disp(markman_parse(buf), title);
+		markman_disp(markman_parse(file), title);
 	} else {
-		while ((fread(buf, 1, sizeof(buf), stdin)) > 0) ;
-		markman_disp(markman_parse(buf), "stdin");
+		file = str_file(0);
+		markman_disp(markman_parse(file), "stdin");
 	}
+	free(file);
 	putchar('\n');
 
 	return EXIT_SUCCESS;
