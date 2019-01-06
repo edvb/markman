@@ -189,7 +189,7 @@ markman_parse(char *src)
 		s = src;
 		src += strcspn(src, "\n");
 		*src = '\0';
-		ret = mk_header(lvl, line_parse((s[0] != '-') ? str_cap(s) : s, STR));
+		ret = mk_header(lvl, line_parse(lvl < 4 ? str_cap(s) : s, STR));
 		if (lvl >= 4)
 			ret->v.h.l->t = BOLD;
 		ret->next = markman_parse(++src);
@@ -210,7 +210,7 @@ markman_parse(char *src)
 		ret = mk_bcode(s);
 		ret->next = markman_parse(src);
 		return ret;
-	case '*':
+	case '*': /* TODO support -  */
 		if (src[1] == ' ') {
 			/* TODO fix multiline points */
 			for (s = src; *src; src++)
