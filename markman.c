@@ -132,14 +132,14 @@ line_parse(char *src, LineType t)
 	Line ret;
 	char *s;
 	for (s = src; *src; src++) /* TODO rewrite this mess */
-		if ((*src == '*' && src[1] == '*') ||
-		    (*src == '_' && src[1] == '_')) {
+		if (((*src == '*' && src[1] == '*') ||
+		     (*src == '_' && src[1] == '_')) && t != LCODE) {
 			*src = '\0';
 			ret = mk_str(s, t);
 			src += 2;
 			ret->next = line_parse(src, t == BOLD ? STR : BOLD);
 			return ret;
-		} else if (*src == '*' || *src == '_') {
+		} else if ((*src == '*' || *src == '_') && t != LCODE) {
 			*src = '\0';
 			ret = mk_str(s, t);
 			src += 1;
@@ -151,20 +151,20 @@ line_parse(char *src, LineType t)
 			src += 1;
 			ret->next = line_parse(src, t == LCODE ? STR : LCODE);
 			return ret;
-		} else if (*src == '[') {
+		} else if (*src == '[' && t != LCODE) {
 			*src = '\0';
 			ret = mk_str(s, t);
 			src += 1;
 			ret->next = line_parse(src, LINK);
 			return ret;
-		} else if (*src == ']' && t == LINK) {
+		} else if (*src == ']' && t == LINK && t != LCODE) {
 			*src = '\0';
 			ret = mk_str(s, t);
 			src += 1;
 			src += strcspn(src, WS);
 			ret->next = line_parse(src, STR);
 			return ret;
-		} else if (*src == '!' && src[1] == '[') {
+		} else if (*src == '!' && src[1] == '[' && t != LCODE) {
 			*src = '\0';
 			ret = mk_str(s, t);
 			src += 1;
