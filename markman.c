@@ -189,8 +189,9 @@ markman_parse(char *src)
 		s = src;
 		src += strcspn(src, "\n");
 		*src = '\0';
-		ret = mk_header(lvl, line_parse(lvl < 4 ? str_cap(s) : s, STR));
-		if (lvl >= 4)
+		ret = mk_header(lvl, line_parse(lvl > 3 || (lvl == 1 && namesec)
+		                                ? s : str_cap(s), STR));
+		if (lvl > 3)
 			ret->v.h.l->t = BOLD;
 		ret->next = markman_parse(++src);
 		return ret;
