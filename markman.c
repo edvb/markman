@@ -376,7 +376,7 @@ static char*
 str_file(int fd)
 {
 	char buf[BUFSIZ], *file = NULL;
-	int len, n;
+	int len = 0, n;
 	while ((n = read(fd, buf, sizeof(buf))) > 0) {
 		file = realloc(file, len + n + 1);
 		if (!file) die(1, "realloc:");
@@ -384,7 +384,7 @@ str_file(int fd)
 		len += n;
 		file[len] = '\0';
 	}
-	if (fd != 0)
+	if (fd)
 		close(fd);
 	if (n < 0)
 		die(1, "read:");
