@@ -4,7 +4,7 @@
 include config.mk
 
 EXE = markman
-SRC = $(wildcard *.c)
+SRC = markman.c
 OBJ = $(SRC:.c=.o)
 
 all: options $(EXE)

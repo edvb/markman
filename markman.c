@@ -2,6 +2,7 @@
 #include <ctype.h>
 #include <fcntl.h>
 #include <libgen.h>
+#include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -9,7 +10,6 @@
 #include <unistd.h>
 
 #include "arg.h"
-#include "util.h"
 
 #include "config.h"
 
@@ -65,7 +65,24 @@ struct Block {
 	Block next;
 };
 
-static char *
+void
+die(int eval, const char *fmt, ...)
+{
+	va_list ap;
+
+	va_start(ap, fmt);
+	vfprintf(stderr, fmt, ap);
+	va_end(ap);
+
+	if (fmt[0] && fmt[strlen(fmt)-1] == ':')
+		fputc(' ', stderr),
+		perror(NULL);
+	else
+		fputc('\n', stderr);
+
+	exit(eval);
+}
+static char*
 str_cap(char *s)
 {
 	char *p;
@@ -78,9 +95,11 @@ str_cap(char *s)
 static Line
 mk_str(char *s, LineType t)
 {
-	Line l = emalloc(sizeof(struct Line));
+	Line l = malloc(sizeof(struct Line));
+	if (!l) die(1, "malloc:");
 	l->t = t;
-	l->v.s = estrdup(s);
+	if (!(l->v.s = strdup(s)))
+		die(1, "strdup:");
 	l->next = NULL;
 	return l;
 }
@@ -88,7 +107,8 @@ mk_str(char *s, LineType t)
 static Block
 mk_header(int lvl, Line l)
 {
-	Block b = emalloc(sizeof(struct Block));
+	Block b = malloc(sizeof(struct Block));
+	if (!b) die(1, "malloc:");
 	b->t = HEADER;
 	b->v.h.lvl = lvl;
 	b->v.h.l   = l;
@@ -99,7 +119,8 @@ mk_header(int lvl, Line l)
 static Block
 mk_para(Line l)
 {
-	Block b = emalloc(sizeof(struct Block));
+	Block b = malloc(sizeof(struct Block));
+	if (!b) die(1, "malloc:");
 	b->t = PARA;
 	b->v.l  = l;
 	b->next = NULL;
@@ -109,7 +130,8 @@ mk_para(Line l)
 static Block
 mk_ulist(Line l)
 {
-	Block b = emalloc(sizeof(struct Block));
+	Block b = malloc(sizeof(struct Block));
+	if (!b) die(1, "malloc:");
 	b->t = ULIST;
 	b->v.l  = l;
 	b->next = NULL;
@@ -119,9 +141,11 @@ mk_ulist(Line l)
 static Block
 mk_bcode(char *s)
 {
-	Block b = emalloc(sizeof(struct Block));
+	Block b = malloc(sizeof(struct Block));
+	if (!b) die(1, "malloc:");
 	b->t = BCODE;
-	b->v.s  = estrdup(s);
+	if (!(b->v.s = strdup(s)))
+		die(1, "strdup:");
 	b->next = NULL;
 	return b;
 }
@@ -231,7 +255,8 @@ markman_parse(char *src)
 		}
 	default:
 		src += strspn(src, WS);
-		s = ecalloc(strlen(src), sizeof(char));
+		s = calloc(strlen(src), sizeof(char));
+		if (!s) die(1, "calloc:");
 		for (i = 0; *src; src++, i++)
 			if (*src == '\n' && src[1] == '\n') {
 				s[i+1] = '\0';
@@ -347,13 +372,14 @@ markman_disp(Block b, char *name)
 	disp_block(b, NULL);
 }
 
-static char *
+static char*
 str_file(int fd)
 {
 	char buf[BUFSIZ], *file = NULL;
 	int len, n;
 	while ((n = read(fd, buf, sizeof(buf))) > 0) {
-		file = erealloc(file, len + n + 1);
+		file = realloc(file, len + n + 1);
+		if (!file) die(1, "realloc:");
 		memcpy(file + len, buf, n);
 		len += n;
 		file[len] = '\0';
