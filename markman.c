@@ -295,8 +295,9 @@ void disp_line(Line l)
 }
 
 void
-disp_block(Block b, Block prev)
+disp_block(Block b, Block prev, int lvl)
 {
+	int new_lvl = lvl;
 	switch (b->t) {
 	case BR:
 		break;
@@ -316,12 +317,16 @@ disp_block(Block b, Block prev)
 			printf(".TP\n");
 			break;
 		}
+		new_lvl = b->v.h.lvl;
 		disp_line(b->v.h.l);
 		putchar('\n');
 		break;
 	case PARA:
-		if (prev && prev->t == HEADER && prev->v.h.lvl < 4)
-			puts(".PP");
+		if (prev && prev->t == HEADER) {
+			if (prev->v.h.lvl < 4)
+				puts(".PP");
+		} else if (lvl == 4)
+			puts(".IP");
 		disp_line(b->v.l);
 		puts("\n.PP");
 		break;
@@ -337,7 +342,7 @@ disp_block(Block b, Block prev)
 		break;
 	}
 	if (b->next)
-		disp_block(b->next, b);
+		disp_block(b->next, b, new_lvl);
 }
 
 void
@@ -369,7 +374,7 @@ markman_disp(Block b, char *name)
 		printf(".PP\n.SH SYNOPSIS\n%s\n", synsec);
 	if (descsec)
 		puts(".PP\n.SH DESCRIPTION");
-	disp_block(b, NULL);
+	disp_block(b, NULL, 1);
 }
 
 static char*
