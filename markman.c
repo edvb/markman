@@ -65,6 +65,7 @@ struct Block {
 	Block next;
 };
 
+
 void
 die(int eval, const char *fmt, ...)
 {
@@ -82,6 +83,7 @@ die(int eval, const char *fmt, ...)
 
 	exit(eval);
 }
+
 static char*
 str_cap(char *s)
 {
@@ -273,7 +275,18 @@ markman_parse(char *src)
 	}
 }
 
-void disp_line(Line l)
+static void
+print_esc(const char *str)
+{
+	for (; *str; str++) {
+		if (*str == '\\')
+			putchar('\\');
+		putchar(*str);
+	}
+}
+
+void
+disp_line(Line l)
 {
 	switch (l->t) {
 	case LINK:
@@ -287,7 +300,9 @@ void disp_line(Line l)
 		printf("\\fI%s\\fP", l->v.s);
 		break;
 	case LCODE:
-		printf("'%s'", l->v.s);
+		putchar('\'');
+		print_esc(l->v.s);
+		putchar('\'');
 		break;
 	}
 	if (l->next)
